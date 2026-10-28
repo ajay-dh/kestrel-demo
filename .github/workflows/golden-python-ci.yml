@@ -59,3 +59,5 @@ jobs:
       - run: pip install -e .
       # Business-readable output on the run page, not just logs
       - run: python -m kestrel.preview >> "$GITHUB_STEP_SUMMARY"
+      # Flag bad prices as annotations: top of the run page + inline on the PR diff
+      - run: python -m kestrel.preview --annotate
