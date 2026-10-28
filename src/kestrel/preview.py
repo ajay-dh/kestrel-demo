@@ -3,6 +3,9 @@
 Usage in CI:  python -m kestrel.preview >> "$GITHUB_STEP_SUMMARY"
 """
 
+import sys
+from pathlib import Path
+
 from kestrel.lanes import LANES, WEIGHTS_KG
 from kestrel.quote import quote
 
@@ -35,5 +38,24 @@ def render() -> str:
     return "\n".join(["## 📦 Rate card preview (standard service)", "", status, "", header, divider, *rows, ""])
 
 
+def annotations() -> list[str]:
+    """GitHub annotations for bad prices, pinned to the line that applies the discount."""
+    src = Path(__file__).with_name("quote.py").read_text(encoding="utf-8").splitlines()
+    line = next((i for i, t in enumerate(src, 1) if "cost" in t and "DISCOUNT" in t), 1)
+    out = []
+    for lane, km in LANES:
+        for w in WEIGHTS_KG:
+            price = quote(w, km)
+            if price <= 0:
+                out.append(
+                    f"::error file=src/kestrel/quote.py,line={line},title=Negative price on the rate card::"
+                    f"{lane}, {w:,} kg would be quoted {money(price)}"
+                )
+    return out
+
+
 if __name__ == "__main__":
-    print(render())
+    if "--annotate" in sys.argv:
+        print("\n".join(annotations()))
+    else:
+        print(render())
